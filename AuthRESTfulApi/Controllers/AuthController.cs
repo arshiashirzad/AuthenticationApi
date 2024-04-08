@@ -24,6 +24,19 @@ namespace AuthRESTfulApi.Controllers
             return Ok(user);
         }
 
+        [HttpPost("login")]
+        public async Task<ActionResult<string>> Login(UserDto request)
+        {
+            if (user.username != request.username)
+            {
+                return BadRequest("User not found!");
+            }
+            if(!VerifyPasswordHash(request.password , user.passwordHash, user.passwordSalt))
+            {
+                return BadRequest("Password Is incorrect");
+            }
+            return Ok("Logged in successfully!");
+        }
         private void CreatePasswordHash(string password, out byte[] passwordHash, out byte[] passwordSalt)
         {
             using (var hmac = new HMACSHA512())
@@ -31,6 +44,16 @@ namespace AuthRESTfulApi.Controllers
                 passwordSalt = hmac.Key;
                 passwordHash = hmac.ComputeHash(System.Text.Encoding.UTF8.GetBytes(password));
             }
+        }
+
+        private bool VerifyPasswordHash(string password,  byte[] passwordHash,  byte[] passwordSalt)
+        {
+            using (var hmac = new HMACSHA512(passwordSalt))
+            {
+                var computedHash =  hmac.ComputeHash(System.Text.Encoding.UTF8.GetBytes(password));
+                return computedHash.SequenceEqual(passwordHash);
+            }
+
         }
     }
 }
